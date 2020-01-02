@@ -57,6 +57,7 @@ FEATURE = _NamedInts(
 	DFUCONTROL_2=0x00C1,
 	DFU=0x00D0,
 	BATTERY_STATUS=0x1000,
+	BATTERY_VOLTAGE=0x1001,
 	LED_CONTROL=0x1300,
 	CHANGE_HOST=0x1814,
 	BACKLIGHT=0x1981,
@@ -140,6 +141,21 @@ BATTERY_STATUS = _NamedInts(
 				slow_recharge=0x04,
 				invalid_battery=0x05,
 				thermal_error=0x06)
+
+CHARGE_STATUS = _NamedInts(
+                                charging=0x00,
+                                full=0x20,
+                                discharging=0x40,
+                                not_charging=0xe0)
+
+CHARGE_LEVEL = _NamedInts(
+                                full=0x02,
+                                critical=0x03)
+
+CHARGE_TYPE = _NamedInts(
+                                standard=0x01,
+                                fast=0x02,
+                                slow=0x03)
 
 ERROR = _NamedInts(
 				unknown=0x01,
@@ -461,6 +477,33 @@ def get_battery(device):
 			_log.debug("device %d battery %d%% charged, next level %d%% charge, status %d = %s",
 						device.number, discharge, dischargeNext, status, BATTERY_STATUS[status])
 		return discharge, BATTERY_STATUS[status]
+
+
+def get_voltage(device):
+        battery_voltage = feature_request(device, FEATURE.BATTERY_VOLTAGE)
+        if battery_voltage:
+                voltage, flags = _unpack('!HB', battery_voltage[:3])
+                charge_sts = CHARGE_STATUS[flags & 0xe0]
+                charge_lvl = ERROR.unknown
+                charge_type = CHARGE_TYPE.standard
+
+                if charge_sts is None:
+                        charge_sts = ERROR.unknown
+                if charge_sts == CHARGE_STATUS.full:
+                        charge_lvl = CHARGE_LEVEL.full
+
+                if (flags & 0x04):
+                        charge_lvl = CHARGE_LEVEL.critical
+                if (flags & 0x08):
+                        charge_type = CHARGE_TYPE.slow
+                if (flags & 0x10):
+                        charge_type = CHARGE_TYPE.fast
+
+                if _log.isEnabledFor(_DEBUG):
+                        _log.debug("device %d, battery voltage %d mV, charge status %d = %s, charge level %s, charge type %s",
+                                                device.number, voltage, (flags & 0xe0),
+                                                charge_sts, charge_lvl, charge_type)
+                return voltage, charge_sts, charge_lvl, charge_type
 
 
 def get_keys(device):
