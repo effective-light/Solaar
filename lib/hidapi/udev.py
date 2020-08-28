@@ -44,19 +44,14 @@ from pyudev import Monitor as _Monitor
 
 native_implementation = 'udev'
 
-DeviceInfo = namedtuple(
-    'DeviceInfo', [
-        'path',
-        'vendor_id',
-        'product_id',
-        'serial',
-        'release',
-        'manufacturer',
-        'product',
-        'interface',
-        'driver',
-    ]
-)
+DeviceInfo = namedtuple('DeviceInfo', [
+    'path',
+    'vendor_id',
+    'product_id',
+    'serial',
+    'interface',
+    'driver',
+])
 del namedtuple
 
 #
@@ -89,25 +84,18 @@ def _match(action, device, filter):
     product_id = filter.get('product_id')
     interface_number = filter.get('usb_interface')
     hid_driver = filter.get('hid_driver')
-
-    usb_device = device.find_parent('usb', 'usb_device')
-    # print ("* parent", action, device, "usb:", usb_device)
-    if not usb_device:
+    hid_device = device.find_parent('hid')
+    # print ("** found hid", action, device, "hid:", hid_device, hid_driver_name)
+    if not hid_device:
         return
 
-    vid = usb_device.get('ID_VENDOR_ID')
-    pid = usb_device.get('ID_MODEL_ID')
-    if vid is None or pid is None:
-        return  # there are reports that sometimes the usb_device isn't set up right so be defensive
-    if not ((vendor_id is None or vendor_id == int(vid, 16)) and (product_id is None or product_id == int(pid, 16))):
+    bus, vid, pid = (int(token, 16) for token in hid_device.get('HID_ID').split(':'))
+    if not ((vendor_id is None or vendor_id == vid) and (product_id is None or product_id == pid)):
         return
 
+    vid, pid = ((num := hex(item)[2:], '0' * (4 - len(num)) + num)[1] for item in (vid, pid))
     if action == 'add':
-        hid_device = device.find_parent('hid')
-        if not hid_device:
-            return
         hid_driver_name = hid_device.get('DRIVER')
-        # print ("** found hid", action, device, "hid:", hid_device, hid_driver_name)
         if hid_driver:
             if isinstance(hid_driver, tuple):
                 if hid_driver_name not in hid_driver:
@@ -117,22 +105,15 @@ def _match(action, device, filter):
 
         intf_device = device.find_parent('usb', 'usb_interface')
         # print ("*** usb interface", action, device, "usb_interface:", intf_device)
-        if interface_number is None:
-            usb_interface = None if intf_device is None else intf_device.attributes.asint('bInterfaceNumber')
-        else:
-            usb_interface = None if intf_device is None else intf_device.attributes.asint('bInterfaceNumber')
-            if usb_interface is None or interface_number != usb_interface:
-                return
+        usb_interface = None if intf_device is None else intf_device.attributes.asint('bInterfaceNumber')
+        if interface_number is not None and (usb_interface is None or interface_number != usb_interface):
+            return
 
-        attrs = usb_device.attributes
         d_info = DeviceInfo(
             path=device.device_node,
-            vendor_id=vid[-4:],
-            product_id=pid[-4:],
+            vendor_id=vid,
+            product_id=pid,
             serial=hid_device.get('HID_UNIQ'),
-            release=attrs.get('bcdDevice'),
-            manufacturer=attrs.get('manufacturer'),
-            product=attrs.get('product'),
             interface=usb_interface,
             driver=hid_driver_name
         )
@@ -141,18 +122,7 @@ def _match(action, device, filter):
     elif action == 'remove':
         # print (dict(device), dict(usb_device))
 
-        d_info = DeviceInfo(
-            path=device.device_node,
-            vendor_id=vid[-4:],
-            product_id=pid[-4:],
-            serial=None,
-            release=None,
-            manufacturer=None,
-            product=None,
-            interface=None,
-            driver=None
-        )
-        return d_info
+        return DeviceInfo(path=device.device_node, vendor_id=vid, product_id=pid, serial=None, interface=None, driver=None)
 
 
 def find_paired_node(receiver_path, index, timeout):
@@ -414,5 +384,12 @@ def get_indexed_string(device_handle, index):
             return usb_dev.attributes.get(key)
 
         elif bus == '0005':  # BLUETOOTH
-            # TODO
-            pass
+            if 0 == index <= 1:
+                tokens = hid_dev.get('HID_NAME').split(' ')
+                if not index:
+                    # Logitech device names are always prepended with the manufacturer's string
+                    return bytes(tokens[0], 'utf-8')
+                else:
+                    return bytes(' '.join(tokens[1:]), 'utf-8')
+            elif index == 2:
+                return bytes(hid_dev.get('HID_UNIQ'), 'utf-8')
