@@ -110,10 +110,10 @@ def _receivers(dev_path=None):
             _sys.exit('%s: error: %s' % (NAME, str(e)))
 
 
-def _wired_devices(dev_path=None):
+def _hid_devices(dev_path=None):
     from logitech_receiver import Device
-    from logitech_receiver.base import wired_devices
-    for dev_info in wired_devices():
+    from logitech_receiver.base import hid_devices
+    for dev_info in hid_devices():
         if dev_path is not None and dev_path != dev_info.path:
             continue
         try:
@@ -186,7 +186,7 @@ def run(cli_args=None, hidraw_path=None):
     try:
         c = list(_receivers(hidraw_path))
         if action == 'show':
-            c += list(_wired_devices(hidraw_path))
+            c += list(_hid_devices(hidraw_path))
 
         if not c:
             raise Exception('No devices found')

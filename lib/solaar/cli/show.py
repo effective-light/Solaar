@@ -245,7 +245,7 @@ def run(devices, args, find_receiver, find_device):
                 print('')
             else:
                 if dev_num == 1:
-                    print('Wired Devices')
+                    print('HID Devices')
                 _print_device(d, num=dev_num)
                 dev_num += 1
         return

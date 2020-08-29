@@ -99,7 +99,7 @@ _ex100_receiver = lambda product_id: {
     'ex100_wpid_fix': True
 }
 
-_wired_device = lambda product_id: {'vendor_id': 0x046d, 'product_id': product_id, 'usb_interface': 2}
+_hid_device = lambda product_id: {'vendor_id': 0x046d, 'product_id': product_id, 'usb_interface': 2}
 
 # standard Unifying receivers (marked with the orange Unifying logo)
 UNIFYING_RECEIVER_C52B = _unifying_receiver(0xc52b)
@@ -133,15 +133,15 @@ LIGHTSPEED_RECEIVER_C545 = _lightspeed_receiver(0xc545)
 LIGHTSPEED_RECEIVER_C541 = _lightspeed_receiver(0xc541)
 
 # Wired devices
-WIRED_DEVICE_C081 = _wired_device(0xc081)  # G900
-WIRED_DEVICE_C082 = _wired_device(0xc082)  # G403
-WIRED_DEVICE_C086 = _wired_device(0xc086)  # G903
-WIRED_DEVICE_C087 = _wired_device(0xc087)  # G703
-WIRED_DEVICE_C088 = _wired_device(0xc088)  # GPro
-WIRED_DEVICE_C090 = _wired_device(0xc090)  # G703 Hero
-WIRED_DEVICE_C091 = _wired_device(0xc091)  # G903 Hero
+WIRED_DEVICE_C081 = _hid_device(0xc081)  # G900
+WIRED_DEVICE_C082 = _hid_device(0xc082)  # G403
+WIRED_DEVICE_C086 = _hid_device(0xc086)  # G903
+WIRED_DEVICE_C087 = _hid_device(0xc087)  # G703
+WIRED_DEVICE_C088 = _hid_device(0xc088)  # GPro
+WIRED_DEVICE_C090 = _hid_device(0xc090)  # G703 Hero
+WIRED_DEVICE_C091 = _hid_device(0xc091)  # G903 Hero
 
-del _DRIVER, _unifying_receiver, _nano_receiver, _lenovo_receiver, _lightspeed_receiver, _wired_device
+del _DRIVER, _unifying_receiver, _nano_receiver, _lenovo_receiver, _lightspeed_receiver, _hid_device
 
 ALL = (
     UNIFYING_RECEIVER_C52B,
@@ -167,7 +167,7 @@ ALL = (
     LIGHTSPEED_RECEIVER_C541,
 )
 
-WIRED_DEVICES = (
+HID_DEVICES = (
     WIRED_DEVICE_C081,
     WIRED_DEVICE_C082,
     WIRED_DEVICE_C086,
